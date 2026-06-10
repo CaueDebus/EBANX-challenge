@@ -2,69 +2,86 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
+
 class AccountService extends Service
 {
-    /** @var array<string, int|float> */
-    private static array $accounts = [];
+    private function getAccounts(): array
+    {
+        return Cache::get('accounts', []);
+    }
+
+    private function saveAccounts(array $accounts): void
+    {
+        Cache::forever('accounts', $accounts);
+    }
 
     public function reset(): void
     {
-        self::$accounts = [];
+        Cache::forget('accounts');
     }
 
     public function getBalance(string $accountId): int|float|null
     {
-        return self::$accounts[$accountId] ?? null;
+        return $this->getAccounts()[$accountId] ?? null;
     }
 
     public function deposit(string $destinationId, int|float $amount): array
     {
-        self::$accounts[$destinationId] = (self::$accounts[$destinationId] ?? 0) + $amount;
+        $accounts = $this->getAccounts();
+        $accounts[$destinationId] = ($accounts[$destinationId] ?? 0) + $amount;
+        $this->saveAccounts($accounts);
 
         return [
             'destination' => [
                 'id' => $destinationId,
-                'balance' => self::$accounts[$destinationId],
+                'balance' => $accounts[$destinationId],
             ],
         ];
     }
 
     public function withdraw(string $originId, int|float $amount): array|null
     {
+        $accounts = $this->getAccounts();
+
         // Rejeita se a conta não existe ou se o saldo é insuficiente para evitar saldo negativo
-        if (!isset(self::$accounts[$originId]) || self::$accounts[$originId] < $amount) {
+        if (!isset($accounts[$originId]) || $accounts[$originId] < $amount) {
             return null;
         }
 
-        self::$accounts[$originId] -= $amount;
+        $accounts[$originId] -= $amount;
+        $this->saveAccounts($accounts);
 
         return [
             'origin' => [
                 'id' => $originId,
-                'balance' => self::$accounts[$originId],
+                'balance' => $accounts[$originId],
             ],
         ];
     }
 
     public function transfer(string $originId, string $destinationId, int|float $amount): array|null
     {
-        // Rejeita a transferência inteira se a origem não existe ou tem saldo insuficiente, ou se a conta de destino não existe
+        $accounts = $this->getAccounts();
+
+        // Rejeita a transferência inteira se a origem não existe, tem saldo insuficiente ou o destino não existe,
         // garantindo que nenhuma das contas seja alterada em caso de falha
-        if (!isset(self::$accounts[$originId]) || self::$accounts[$originId] < $amount || !isset(self::$accounts[$destinationId])) {
+        if (!isset($accounts[$originId]) || $accounts[$originId] < $amount || !isset($accounts[$destinationId])) {
             return null;
         }
 
-        self::$accounts[$originId] -= $amount;
-        self::$accounts[$destinationId] = (self::$accounts[$destinationId] ?? 0) + $amount;
+        $accounts[$originId] -= $amount;
+        $accounts[$destinationId] += $amount;
+        $this->saveAccounts($accounts);
 
         return [
             'origin' => [
                 'id' => $originId,
-                'balance' => self::$accounts[$originId],
+                'balance' => $accounts[$originId],
             ],
             'destination' => [
                 'id' => $destinationId,
-                'balance' => self::$accounts[$destinationId],
+                'balance' => $accounts[$destinationId],
             ],
         ];
     }

@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\AccountService;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class AccountServiceTest extends TestCase
 {

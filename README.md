@@ -16,8 +16,6 @@ php artisan serve
 
 A API estará disponível em `http://localhost:8000`.
 
-> **Atenção:** o estado é mantido em memória via processo único. Use obrigatoriamente `php artisan serve` — servidores com PHP-FPM (nginx, Herd) não compartilham estado entre workers e não funcionarão corretamente.
-
 ## Endpoints
 
 | Método | Rota      | Descrição                        |
@@ -57,7 +55,7 @@ POST /event  {"type":"withdraw","origin":"100","amount":5}
 POST /event  {"type":"transfer","origin":"100","amount":5,"destination":"200"}
 → 201 {"origin":{"id":"100","balance":0},"destination":{"id":"200","balance":5}}
 
-# Erros (conta inexistente ou saldo insuficiente)
+# Erros (conta inexistente, destino inexistente ou saldo insuficiente)
 → 404 0
 ```
 
@@ -75,13 +73,13 @@ A suíte cobre:
 
 - Depósito cria a conta de destino automaticamente se ela não existir.
 - Saque é rejeitado se a conta não existir ou se o saldo for insuficiente — o saldo nunca fica negativo.
-- Transferência é rejeitada nas mesmas condições do saque, e é atômica: nenhuma das contas é alterada em caso de falha.
+- Transferência é rejeitada se a conta de origem não existir, se o saldo for insuficiente ou se a conta de destino não existir. A operação é atômica: nenhuma das contas é alterada em caso de falha.
 - Transferência para a própria conta de origem é rejeitada.
 - `GET /balance` é estritamente somente leitura — não altera nenhum estado.
 
 ## Decisões técnicas
 
-- **Estado em memória** (`static array`): conforme especificação, sem persistência em banco de dados.
-- **`POST /reset`** zera o array estático, garantindo isolamento entre sessões de teste.
+- **Estado via cache (`CACHE_STORE=file`)**: a implementação original usava um `static array`, que funciona em ambientes com processo PHP persistente (ex: FrankenPHP, Swoole). No Windows com `php artisan serve`, o processo PHP é recriado a cada request e o estado é perdido. O driver `file` resolve isso persistindo o estado entre requests sem necessidade de banco de dados. É uma solução menos performática que a memória pura, porém funcional para qualquer ambiente.
+- **`POST /reset`** limpa o cache de contas, garantindo isolamento entre sessões de teste.
 - **Sem camada de repositório**: o `AccountService` acessa o estado diretamente — adicionar abstração aqui seria over-engineering para o escopo do desafio.
 - **Dois níveis de teste**: unitários (lógica do service com estado real) e integração (fluxo HTTP completo com service real, sem mocks).
