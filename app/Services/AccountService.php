@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 
-class AccountService extends Service
+class AccountService
 {
     private function getAccounts(): array
     {
