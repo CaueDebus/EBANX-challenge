@@ -64,14 +64,14 @@ class AccountService extends Service
     {
         $accounts = $this->getAccounts();
 
-        // Rejeita a transferência inteira se a origem não existe, tem saldo insuficiente ou o destino não existe,
+        // Rejeita a transferência inteira se a origem não existe ou tem saldo insuficiente,
         // garantindo que nenhuma das contas seja alterada em caso de falha
-        if (!isset($accounts[$originId]) || $accounts[$originId] < $amount || !isset($accounts[$destinationId])) {
+        if (!isset($accounts[$originId]) || $accounts[$originId] < $amount) {
             return null;
         }
 
         $accounts[$originId] -= $amount;
-        $accounts[$destinationId] += $amount;
+        $accounts[$destinationId] = ($accounts[$destinationId] ?? 0) + $amount;
         $this->saveAccounts($accounts);
 
         return [

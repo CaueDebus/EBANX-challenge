@@ -73,7 +73,7 @@ A suíte cobre:
 
 - Depósito cria a conta de destino automaticamente se ela não existir.
 - Saque é rejeitado se a conta não existir ou se o saldo for insuficiente — o saldo nunca fica negativo.
-- Transferência é rejeitada se a conta de origem não existir, se o saldo for insuficiente ou se a conta de destino não existir. A operação é atômica: nenhuma das contas é alterada em caso de falha.
+- Transferência é rejeitada se a conta de origem não existir ou se o saldo for insuficiente. A operação é atômica: nenhuma das contas é alterada em caso de falha. A conta de destino é criada automaticamente se não existir.
 - Transferência para a própria conta de origem é rejeitada.
 - `GET /balance` é estritamente somente leitura — não altera nenhum estado.
 

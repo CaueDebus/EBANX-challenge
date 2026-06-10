@@ -110,33 +110,22 @@ class AccountServiceTest extends TestCase
     public function test_transfer_moves_amount_between_accounts(): void
     {
         $this->service->deposit('100', 15);
-        $this->service->deposit('300', 5);
 
         $result = $this->service->transfer('100', '300', 15);
 
         $this->assertEquals([
             'origin' => ['id' => '100', 'balance' => 0],
-            'destination' => ['id' => '300', 'balance' => 20],
+            'destination' => ['id' => '300', 'balance' => 15],
         ], $result);
     }
 
-    public function test_transfer_returns_null_for_non_existing_destination(): void
-    {
-        $this->service->deposit('100', 50);
-
-        $result = $this->service->transfer('100', '300', 20);
-
-        $this->assertNull($result);
-    }
-
-    public function test_transfer_does_not_alter_origin_balance_when_destination_does_not_exist(): void
+    public function test_transfer_creates_destination_account_if_not_exists(): void
     {
         $this->service->deposit('100', 50);
 
         $this->service->transfer('100', '300', 20);
 
-        $this->assertEquals(50, $this->service->getBalance('100'));
-        $this->assertNull($this->service->getBalance('300'));
+        $this->assertEquals(20, $this->service->getBalance('300'));
     }
 
     public function test_reset_clears_all_accounts(): void
