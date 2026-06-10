@@ -33,11 +33,13 @@ class AccountIntegrationTest extends TestCase
             ->assertStatus(201)
             ->assertJson(['origin' => ['id' => '100', 'balance' => 15]]);
 
+        $this->postJson('/event', ['type' => 'deposit', 'destination' => '300', 'amount' => 5]);
+
         $this->postJson('/event', ['type' => 'transfer', 'origin' => '100', 'amount' => 15, 'destination' => '300'])
             ->assertStatus(201)
             ->assertJson([
                 'origin' => ['id' => '100', 'balance' => 0],
-                'destination' => ['id' => '300', 'balance' => 15],
+                'destination' => ['id' => '300', 'balance' => 20],
             ]);
 
         $this->postJson('/event', ['type' => 'transfer', 'origin' => '200', 'amount' => 15, 'destination' => '300'])
@@ -116,6 +118,36 @@ class AccountIntegrationTest extends TestCase
 
         $response->assertStatus(422);
         $this->get('/balance?account_id=100')->assertContent('50');
+    }
+
+    public function test_transfer_is_rejected_when_destination_does_not_exist(): void
+    {
+        $this->postJson('/event', ['type' => 'deposit', 'destination' => '100', 'amount' => 50]);
+
+        $response = $this->postJson('/event', [
+            'type' => 'transfer',
+            'origin' => '100',
+            'destination' => '300',
+            'amount' => 20,
+        ]);
+
+        $response->assertStatus(404);
+        $response->assertContent('0');
+    }
+
+    public function test_transfer_does_not_alter_origin_balance_when_destination_does_not_exist(): void
+    {
+        $this->postJson('/event', ['type' => 'deposit', 'destination' => '100', 'amount' => 50]);
+
+        $this->postJson('/event', [
+            'type' => 'transfer',
+            'origin' => '100',
+            'destination' => '300',
+            'amount' => 20,
+        ]);
+
+        $this->get('/balance?account_id=100')->assertStatus(200)->assertContent('50');
+        $this->get('/balance?account_id=300')->assertStatus(404);
     }
 
     public function test_reset_clears_all_state(): void

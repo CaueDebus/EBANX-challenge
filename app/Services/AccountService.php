@@ -48,9 +48,9 @@ class AccountService extends Service
 
     public function transfer(string $originId, string $destinationId, int|float $amount): array|null
     {
-        // Rejeita a transferência inteira se a origem não existe ou tem saldo insuficiente,
+        // Rejeita a transferência inteira se a origem não existe ou tem saldo insuficiente, ou se a conta de destino não existe
         // garantindo que nenhuma das contas seja alterada em caso de falha
-        if (!isset(self::$accounts[$originId]) || self::$accounts[$originId] < $amount) {
+        if (!isset(self::$accounts[$originId]) || self::$accounts[$originId] < $amount || !isset(self::$accounts[$destinationId])) {
             return null;
         }
 
